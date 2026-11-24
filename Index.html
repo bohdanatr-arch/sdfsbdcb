@@ -1,0 +1,941 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Winter Rewards Roulette</title>
+    <!-- Підключення Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Підключення Tone.js для синтезованих звуків без зовнішніх файлів -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
+    <!-- Шрифти Inter та Montserrat для чіткої ігрової типографіки -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@600;700;800;900&family=Montserrat:wght@800;900&display=swap" rel="stylesheet">
+    <style>
+        /* Базові стилі та кастомні анімації */
+        body {
+            font-family: 'Inter', sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #0b132b;
+            overflow-x: hidden;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .font-display {
+            font-family: 'Montserrat', sans-serif;
+        }
+
+        /* Зимовий фон з ефектом затишного вечірнього містечка */
+        .winter-village-bg {
+            background: radial-gradient(circle at 50% 25%, #243b6b 0%, #132242 50%, #091124 100%);
+            position: relative;
+        }
+
+        /* Анімовані сонячні/святкові промені на екрані перемоги */
+        @keyframes spin-slow {
+            from { transform: translate(-50%, -50%) rotate(0deg); }
+            to { transform: translate(-50%, -50%) rotate(360deg); }
+        }
+
+        .sunburst-rays {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 180vmax;
+            height: 180vmax;
+            background: repeating-conic-gradient(
+                from 0deg,
+                rgba(255, 223, 107, 0.22) 0deg 15deg,
+                transparent 15deg 30deg
+            );
+            animation: spin-slow 24s linear infinite;
+            pointer-events: none;
+        }
+
+        /* Пульсація золотої монети */
+        @keyframes pulse-glow {
+            0%, 100% {
+                filter: drop-shadow(0 0 25px rgba(255, 200, 55, 0.7));
+                transform: scale(1);
+            }
+            50% {
+                filter: drop-shadow(0 0 45px rgba(255, 215, 80, 0.95));
+                transform: scale(1.06);
+            }
+        }
+
+        .coin-glow {
+            animation: pulse-glow 2s ease-in-out infinite;
+        }
+
+        /* Кнопка START з градієнтом та блиском */
+        .btn-winter-start {
+            background: linear-gradient(180deg, #38b6ff 0%, #1976d2 55%, #0d47a1 100%);
+            border: 3px solid #ffffff;
+            box-shadow: 
+                0 6px 0 #082d6b,
+                0 12px 24px rgba(0, 140, 255, 0.45),
+                inset 0 2px 4px rgba(255, 255, 255, 0.7);
+            transition: transform 0.1s ease, box-shadow 0.1s ease, filter 0.2s ease;
+        }
+
+        .btn-winter-start:hover:not(:disabled) {
+            filter: brightness(1.08);
+        }
+
+        .btn-winter-start:active:not(:disabled) {
+            transform: translateY(4px);
+            box-shadow: 
+                0 2px 0 #082d6b,
+                0 6px 12px rgba(0, 140, 255, 0.4),
+                inset 0 2px 4px rgba(255, 255, 255, 0.7);
+        }
+
+        .btn-winter-start:disabled {
+            background: linear-gradient(180deg, #2d9cdb 0%, #1565c0 100%);
+            opacity: 0.9;
+            cursor: not-allowed;
+        }
+
+        /* Скляна картка рулетки */
+        .roulette-card {
+            background: linear-gradient(180deg, rgba(44, 68, 108, 0.85) 0%, rgba(25, 41, 71, 0.92) 100%);
+            border: 1.5px solid rgba(165, 205, 255, 0.35);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.35), inset 0 1px 1px rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(8px);
+        }
+
+        .roulette-card.winner-highlight {
+            border-color: #ffd54f;
+            box-shadow: 0 0 25px rgba(255, 213, 79, 0.65), inset 0 0 15px rgba(255, 213, 79, 0.35);
+        }
+
+        /* Текст з чорним контуром як у відео */
+        .text-outline {
+            text-shadow: 
+                -2px -2px 0 #000,  
+                 2px -2px 0 #000,
+                -2px  2px 0 #000,
+                 2px  2px 0 #000,
+                 0px  4px 8px rgba(0,0,0,0.6);
+        }
+
+        /* Анімація червоного овалу навколо балансу */
+        @keyframes draw-circle {
+            0% { stroke-dashoffset: 400; opacity: 0; }
+            20% { opacity: 1; }
+            100% { stroke-dashoffset: 0; opacity: 1; }
+        }
+
+        .animate-red-ring {
+            stroke-dasharray: 400;
+            stroke-dashoffset: 0;
+            animation: draw-circle 0.7s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+        }
+
+        /* Анімація фінального банера CHECK IT OUT */
+        @keyframes pop-in {
+            0% { transform: scale(0.4); opacity: 0; }
+            70% { transform: scale(1.08); opacity: 1; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        .animate-pop-in {
+            animation: pop-in 0.45s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+        }
+    </style>
+</head>
+<body class="min-h-screen w-full flex flex-col justify-between winter-village-bg text-white relative overflow-hidden">
+
+    <!-- Canvas для падаючого снігу та вогників на задньому плані -->
+    <canvas id="snowCanvas" class="fixed inset-0 w-full h-full pointer-events-none z-10"></canvas>
+
+    <!-- Декоративний силует засніженого вечірнього містечка з теплими вікнами -->
+    <div class="fixed inset-0 pointer-events-none z-0 overflow-hidden opacity-45">
+        <svg viewBox="0 0 800 900" preserveAspectRatio="xMidYMax slice" class="w-full h-full">
+            <defs>
+                <radialGradient id="windowGlow" cx="50%" cy="50%" r="50%">
+                    <stop offset="0%" stop-color="#ffdf73" stop-opacity="0.95"/>
+                    <stop offset="100%" stop-color="#ff9800" stop-opacity="0"/>
+                </radialGradient>
+            </defs>
+            <!-- Засніжені пагорби -->
+            <path d="M0,720 Q200,660 450,730 T800,700 L800,900 L0,900 Z" fill="#172a4f"/>
+            <path d="M0,780 Q320,730 580,790 T800,770 L800,900 L0,900 Z" fill="#1f3763"/>
+            
+            <!-- Будиночок зліва -->
+            <g transform="translate(40, 500)">
+                <polygon points="0,120 90,30 180,120" fill="#101d38"/>
+                <rect x="20" y="120" width="140" height="150" fill="#142444"/>
+                <!-- Теплі вікна -->
+                <rect x="45" y="145" width="32" height="38" rx="4" fill="#ffca28"/>
+                <circle cx="61" cy="164" r="35" fill="url(#windowGlow)"/>
+                <rect x="102" y="145" width="32" height="38" rx="4" fill="#ffca28"/>
+                <circle cx="118" cy="164" r="35" fill="url(#windowGlow)"/>
+                <rect x="45" y="205" width="32" height="38" rx="4" fill="#ffb300"/>
+                <!-- Сніг на даху -->
+                <path d="M-5,122 L90,26 L185,122" stroke="#dceeff" stroke-width="10" stroke-linecap="round" fill="none"/>
+            </g>
+
+            <!-- Будиночок справа -->
+            <g transform="translate(570, 520)">
+                <polygon points="0,110 95,20 190,110" fill="#101d38"/>
+                <rect x="20" y="110" width="150" height="160" fill="#142444"/>
+                <rect x="45" y="135" width="34" height="40" rx="4" fill="#ffca28"/>
+                <circle cx="62" cy="155" r="38" fill="url(#windowGlow)"/>
+                <rect x="110" y="135" width="34" height="40" rx="4" fill="#ffca28"/>
+                <circle cx="127" cy="155" r="38" fill="url(#windowGlow)"/>
+                <rect x="110" y="195" width="34" height="40" rx="4" fill="#ffa000"/>
+                <path d="M-5,112 L95,16 L195,112" stroke="#dceeff" stroke-width="10" stroke-linecap="round" fill="none"/>
+            </g>
+
+            <!-- Ялинки на горизонті -->
+            <polygon points="280,690 310,590 340,690" fill="#0d1b33"/>
+            <polygon points="275,720 310,620 345,720" fill="#112240"/>
+            <polygon points="460,700 495,580 530,700" fill="#0d1b33"/>
+            <polygon points="452,735 495,615 538,735" fill="#112240"/>
+        </svg>
+    </div>
+
+    <!-- Кнопка керування звуком у верхньому правому куті -->
+    <header class="w-full flex justify-between items-center p-4 sm:p-6 z-30">
+        <div class="flex items-center gap-2 bg-slate-900/60 backdrop-blur-md border border-blue-300/20 px-3.5 py-1.5 rounded-full">
+            <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></span>
+            <span class="text-xs sm:text-sm font-bold tracking-wider uppercase text-blue-100">Winter Event</span>
+        </div>
+        <button id="soundToggleBtn" aria-label="Увімкнути або вимкнути звук" class="p-3 rounded-full bg-slate-900/65 hover:bg-slate-800/80 border border-blue-300/30 text-white transition active:scale-95 shadow-lg">
+            <!-- Іконка звуку -->
+            <svg id="soundOnIcon" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z"/>
+            </svg>
+            <svg id="soundOffIcon" class="w-5 h-5 hidden text-rose-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15zM17 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2"/>
+            </svg>
+        </button>
+    </header>
+
+    <!-- ===================================================================== -->
+    <!-- ЕКРАН 1: ГОЛОВНА РУЛЕТКА (БЕЗ ЛЮДИНИ ЗВЕРХУ, НА ВЕСЬ ЕКРАН)          -->
+    <!-- ===================================================================== -->
+    <main id="rouletteScreen" class="flex-1 flex flex-col items-center justify-center w-full max-w-2xl mx-auto px-3 sm:px-6 z-20 transition-opacity duration-500">
+        
+        <!-- Заголовок зверху замість відео-вставки -->
+        <div class="text-center mb-6 sm:mb-8">
+            <div class="inline-flex items-center gap-1.5 px-4 py-1 rounded-full bg-blue-500/20 border border-blue-300/30 text-blue-200 text-xs sm:text-sm font-bold uppercase tracking-widest mb-2">
+                <span>❄️</span> Holiday Spin <span>❄️</span>
+            </div>
+            <h1 class="font-display text-3xl sm:text-5xl font-black tracking-tight text-white drop-shadow-[0_4px_12px_rgba(0,0,0,0.6)]">
+                SPIN & <span class="text-amber-300">WIN</span>
+            </h1>
+        </div>
+
+        <!-- Контейнер барабана рулетки -->
+        <div class="relative w-full py-4">
+            
+            <!-- Верхній білий контурний трикутник-покажчик -->
+            <div class="absolute -top-3 left-1/2 -translate-x-1/2 z-30 pointer-events-none drop-shadow-[0_3px_6px_rgba(0,0,0,0.8)]">
+                <svg width="46" height="36" viewBox="0 0 46 36">
+                    <polygon points="4,4 42,4 23,32" fill="rgba(255,255,255,0.15)" stroke="#ffffff" stroke-width="3.5" stroke-linejoin="round"/>
+                </svg>
+            </div>
+
+            <!-- Вертикальна лінія центрування -->
+            <div class="absolute top-2 bottom-2 left-1/2 -translate-x-1/2 w-[2px] bg-white/40 z-20 pointer-events-none"></div>
+
+            <!-- Нижній білий контурний трикутник-покажчик -->
+            <div class="absolute -bottom-3 left-1/2 -translate-x-1/2 z-30 pointer-events-none drop-shadow-[0_-3px_6px_rgba(0,0,0,0.8)]">
+                <svg width="46" height="36" viewBox="0 0 46 36">
+                    <polygon points="23,4 42,32 4,32" fill="rgba(255,255,255,0.15)" stroke="#ffffff" stroke-width="3.5" stroke-linejoin="round"/>
+                </svg>
+            </div>
+
+            <!-- Вікно прокрутки з плавним затемненням по краях -->
+            <div id="reelViewport" class="w-full overflow-hidden rounded-3xl py-2 relative" style="-webkit-mask-image: linear-gradient(to right, transparent 0%, black 12%, black 88%, transparent 100%); mask-image: linear-gradient(to right, transparent 0%, black 12%, black 88%, transparent 100%);">
+                <!-- Рухома стрічка карток -->
+                <div id="reelTrack" class="flex items-center gap-3 sm:gap-4 will-change-transform">
+                    <!-- Картки генеруються динамічно через JavaScript -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Кнопка START / SPINNING... -->
+        <div class="mt-8 sm:mt-10 w-full max-w-xs sm:max-w-sm px-2">
+            <button id="spinBtn" class="btn-winter-start w-full py-4 sm:py-5 px-6 rounded-2xl flex items-center justify-between text-white font-display font-black text-xl sm:text-2xl tracking-wider uppercase cursor-pointer">
+                <!-- Сніжинка зліва -->
+                <svg class="w-6 h-6 sm:w-7 sm:h-7 text-white/90 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round">
+                    <path d="M12 2v20M2 12h20M4.93 4.93l14.14 14.14M19.07 4.93L4.93 19.07"/>
+                </svg>
+                <span id="spinBtnText" class="mx-2 truncate">START</span>
+                <!-- Сніжинка справа -->
+                <svg class="w-6 h-6 sm:w-7 sm:h-7 text-white/90 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round">
+                    <path d="M12 2v20M2 12h20M4.93 4.93l14.14 14.14M19.07 4.93L4.93 19.07"/>
+                </svg>
+            </button>
+        </div>
+    </main>
+
+    <!-- ===================================================================== -->
+    <!-- ЕКРАН 2: ПЕРЕМОЖНИЙ ЕКРАН (YOU WIN!)                                  -->
+    <!-- ===================================================================== -->
+    <section id="winScreen" class="hidden fixed inset-0 z-30 bg-slate-950/60 backdrop-blur-md flex flex-col items-center justify-center px-4 text-center overflow-hidden transition-all duration-300">
+        <!-- Промені світла -->
+        <div class="sunburst-rays"></div>
+
+        <div class="relative z-10 flex flex-col items-center max-w-md w-full animate-pop-in">
+            <h2 class="font-display text-4xl sm:text-6xl font-black text-white text-outline tracking-wide mb-6">
+                YOU WIN!
+            </h2>
+
+            <!-- Велика золота монета з блиском -->
+            <div class="w-44 h-44 sm:w-56 sm:h-56 mb-6 coin-glow flex items-center justify-center">
+                <img src="https://i.postimg.cc/mg0Nckst/Znimok-ekrana-2026-11-24-o-20-51-49.png" alt="Robux Coin" class="w-full h-full object-contain" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+                <svg style="display:none;" viewBox="0 0 200 200" class="w-full h-full">
+                    <defs>
+                        <linearGradient id="goldOuter" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" stop-color="#fff59d"/>
+                            <stop offset="35%" stop-color="#ffd54f"/>
+                            <stop offset="70%" stop-color="#ffb300"/>
+                            <stop offset="100%" stop-color="#e65100"/>
+                        </linearGradient>
+                        <linearGradient id="goldInner" x1="100%" y1="0%" x2="0%" y2="100%">
+                            <stop offset="0%" stop-color="#ff8f00"/>
+                            <stop offset="50%" stop-color="#ffca28"/>
+                            <stop offset="100%" stop-color="#fff8e1"/>
+                        </linearGradient>
+                    </defs>
+                    <!-- Восьмикутна зовнішня форма монети -->
+                    <polygon points="65,12 135,12 188,65 188,135 135,188 65,188 12,135 12,65" fill="url(#goldOuter)" stroke="#fff9c4" stroke-width="4"/>
+                    <!-- Внутрішній ободок -->
+                    <polygon points="72,26 128,26 174,72 174,128 128,174 72,174 26,128 26,72" fill="url(#goldInner)" stroke="#b26a00" stroke-width="3"/>
+                    <!-- Центральний фірмовий квадрат з вирізом -->
+                    <rect x="64" y="64" width="72" height="72" rx="10" fill="#ffffff" stroke="#b26a00" stroke-width="3"/>
+                    <rect x="86" y="86" width="28" height="28" rx="3" fill="#d99b26"/>
+                </svg>
+            </div>
+
+            <!-- Сума виграшу -->
+            <div id="winAmountTitle" class="font-display text-3xl sm:text-5xl font-black text-amber-300 text-outline mb-2">
+                10,000 Robux
+            </div>
+            <p class="text-white text-base sm:text-xl font-bold drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)] mb-8">
+                Sent to your Roblox account
+            </p>
+
+            <!-- Кнопка переходу до перевірки балансу / аватара -->
+            <button id="claimBtn" class="btn-winter-start px-8 py-4 rounded-2xl font-display font-black text-lg sm:text-xl uppercase tracking-wider text-white cursor-pointer">
+                CHECK BALANCE
+            </button>
+        </div>
+    </section>
+
+    <!-- ===================================================================== -->
+    <!-- ЕКРАН 3: КАСТОМІЗАЦІЯ АВАТАРА ТА ОНОВЛЕННЯ БАЛАНСУ (ЯК НАПРИКІНЦІ)    -->
+    <!-- ===================================================================== -->
+    <section id="avatarScreen" class="hidden fixed inset-0 z-40 bg-white text-slate-900 flex flex-col justify-between overflow-hidden">
+        
+        <!-- Верхня панель інтерфейсу кастомізації -->
+        <div class="w-full max-w-xl mx-auto flex items-center justify-between px-4 pt-4 pb-2">
+            <button id="backToSpinBtn" class="p-2.5 rounded-full hover:bg-slate-100 active:scale-95 transition" aria-label="Назад до рулетки">
+                <svg class="w-7 h-7 text-slate-800" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+                </svg>
+            </button>
+
+            <div class="flex items-center gap-1.5 font-extrabold text-xl sm:text-2xl text-slate-900">
+                <span>Customize</span>
+                <svg class="w-5 h-5 text-slate-700" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/>
+                </svg>
+            </div>
+
+            <!-- Віджет балансу з анімацією підрахунку та червоним обведенням -->
+            <div class="relative flex items-center gap-1.5 bg-white border-2 border-slate-300 rounded-full px-3.5 py-1.5 shadow-sm">
+                <!-- Іконка монети -->
+                <svg class="w-6 h-6 shrink-0" viewBox="0 0 36 36">
+                    <polygon points="12,3 24,3 33,12 33,24 24,33 12,33 3,24 3,12" fill="none" stroke="#1e293b" stroke-width="3"/>
+                    <rect x="13" y="13" width="10" height="10" rx="1.5" fill="#1e293b"/>
+                </svg>
+                <span id="balanceCounter" class="font-black text-xl sm:text-2xl tracking-tight text-slate-900">223</span>
+
+                <!-- Червоний овал, який з'являється після нарахування -->
+                <svg id="redHighlightRing" class="hidden absolute -inset-3 w-[calc(100%+24px)] h-[calc(100%+24px)] pointer-events-none" viewBox="0 0 160 70">
+                    <ellipse cx="80" cy="35" rx="74" ry="29" fill="none" stroke="#ef4444" stroke-width="5" stroke-linecap="round" class="animate-red-ring"/>
+                </svg>
+            </div>
+        </div>
+
+        <!-- Центральна сцена зі стилізованим 3D-подібним аватаром у синьо-чорному стилі -->
+        <div id="avatarShowcase" class="relative flex-1 w-full max-w-xl mx-auto flex items-center justify-center bg-gradient-to-b from-slate-100 via-slate-200 to-slate-300 overflow-hidden transition-all duration-500">
+            
+            <!-- Декоративні білі блоки на фоні (як у студії кастомізації) -->
+            <div class="absolute inset-0 pointer-events-none opacity-70">
+                <div class="absolute bottom-0 left-4 w-24 h-36 bg-white/80 rounded-t-lg shadow-sm"></div>
+                <div class="absolute bottom-0 left-24 w-28 h-24 bg-slate-50/90 rounded-t-lg shadow-sm"></div>
+                <div class="absolute bottom-0 right-6 w-28 h-44 bg-white/80 rounded-t-lg shadow-sm"></div>
+                <div class="absolute bottom-0 right-28 w-24 h-28 bg-slate-50/90 rounded-t-lg shadow-sm"></div>
+            </div>
+
+            <!-- Деталізований векторний персонаж (чорно-синій стиль з окулярами та вогняною аурою) -->
+            <div class="relative z-10 w-64 sm:w-80 h-auto flex flex-col items-center justify-center transform hover:scale-105 transition-transform duration-300">
+                <svg viewBox="0 0 320 420" class="w-full h-auto drop-shadow-[0_18px_24px_rgba(15,23,42,0.35)]">
+                    <defs>
+                        <linearGradient id="neonBlue" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" stop-color="#38bdf8"/>
+                            <stop offset="100%" stop-color="#0284c7"/>
+                        </linearGradient>
+                        <linearGradient id="darkJacket" x1="0%" y1="0%" x2="0%" y2="100%">
+                            <stop offset="0%" stop-color="#1e293b"/>
+                            <stop offset="100%" stop-color="#090d16"/>
+                        </linearGradient>
+                    </defs>
+
+                    <!-- Синя енергетична аура навколо голови -->
+                    <path d="M95,95 Q80,65 110,55 Q130,30 160,35 Q195,28 215,58 Q242,70 225,100" fill="none" stroke="#0ea5e9" stroke-width="6" stroke-linecap="round" opacity="0.85"/>
+                    <path d="M102,88 Q92,68 118,62 Q138,40 162,44 Q190,38 206,64 Q228,74 216,96" fill="none" stroke="#7dd3fc" stroke-width="3" stroke-linecap="round"/>
+
+                    <!-- Тіло / Куртка з синім полум'ям -->
+                    <rect x="108" y="155" width="104" height="122" rx="18" fill="url(#darkJacket)"/>
+                    <!-- Синій принт полум'я на куртці -->
+                    <path d="M112,245 Q125,215 135,240 Q148,200 160,238 Q175,205 188,242 Q198,220 208,248 L208,270 L112,270 Z" fill="url(#neonBlue)"/>
+                    <!-- Ремінь через плече та срібний ланцюжок -->
+                    <line x1="122" y1="158" x2="198" y2="268" stroke="#0f172a" stroke-width="14"/>
+                    <line x1="122" y1="158" x2="198" y2="268" stroke="#38bdf8" stroke-width="2" stroke-dasharray="6 4"/>
+                    <path d="M140,158 Q160,185 180,158" fill="none" stroke="#e2e8f0" stroke-width="3.5"/>
+                    <circle cx="160" cy="175" r="5" fill="#cbd5e1"/>
+
+                    <!-- Ліва рука (піднята до голови) -->
+                    <path d="M108,168 L74,142 L94,104" fill="none" stroke="#111827" stroke-width="28" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M84,150 Q78,132 92,124" fill="none" stroke="#0ea5e9" stroke-width="4" stroke-linecap="round"/>
+                    <circle cx="96" cy="100" r="13" fill="#ffedd5"/>
+
+                    <!-- Права рука -->
+                    <path d="M212,168 L238,228 L232,268" fill="none" stroke="#111827" stroke-width="28" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M222,190 Q235,205 226,225" fill="none" stroke="#0ea5e9" stroke-width="4" stroke-linecap="round"/>
+                    <circle cx="232" cy="272" r="13" fill="#ffedd5"/>
+
+                    <!-- Ноги / Джинси -->
+                    <rect x="114" y="275" width="42" height="105" rx="10" fill="#0f172a"/>
+                    <rect x="164" y="275" width="42" height="105" rx="10" fill="#0f172a"/>
+                    <!-- Сині блискавки на штанах -->
+                    <path d="M124,315 L138,325 L126,342 L142,355" fill="none" stroke="#38bdf8" stroke-width="3.5" stroke-linecap="round"/>
+                    <path d="M176,310 L190,322 L178,338 L194,352" fill="none" stroke="#38bdf8" stroke-width="3.5" stroke-linecap="round"/>
+
+                    <!-- Кросівки -->
+                    <rect x="108" y="374" width="52" height="22" rx="8" fill="#0284c7"/>
+                    <rect x="108" y="388" width="52" height="8" rx="4" fill="#ffffff"/>
+                    <rect x="160" y="374" width="52" height="22" rx="8" fill="#0284c7"/>
+                    <rect x="160" y="388" width="52" height="8" rx="4" fill="#ffffff"/>
+
+                    <!-- Голова -->
+                    <rect x="122" y="76" width="76" height="76" rx="22" fill="#ffedd5"/>
+                    <!-- Обличчя (впевнена посмішка) -->
+                    <circle cx="144" cy="116" r="4.5" fill="#0f172a"/>
+                    <circle cx="176" cy="116" r="4.5" fill="#0f172a"/>
+                    <path d="M148,132 Q160,140 172,130" fill="none" stroke="#0f172a" stroke-width="3" stroke-linecap="round"/>
+
+                    <!-- Стильне темне волосся -->
+                    <path d="M116,105 Q114,62 160,60 Q206,62 204,105 Q190,88 175,96 Q160,82 145,96 Q130,88 116,105 Z" fill="#090d16"/>
+                    <!-- Захисні окуляри на лобі -->
+                    <rect x="126" y="68" width="30" height="20" rx="6" fill="#0284c7" stroke="#1e293b" stroke-width="3.5"/>
+                    <rect x="164" y="68" width="30" height="20" rx="6" fill="#0284c7" stroke="#1e293b" stroke-width="3.5"/>
+                    <line x1="156" y1="78" x2="164" y2="78" stroke="#1e293b" stroke-width="4"/>
+                </svg>
+            </div>
+        </div>
+
+        <!-- Нижні вкладки меню кастомізації -->
+        <div class="w-full max-w-xl mx-auto bg-white border-t border-slate-200 px-4 py-3 flex justify-around items-center text-sm sm:text-base font-bold text-slate-500">
+            <div class="text-slate-900 border-b-4 border-slate-900 pb-1">Characters</div>
+            <div class="pb-1">Head & Body</div>
+            <div class="pb-1">Clothing</div>
+        </div>
+
+        <!-- Фінальний оверлей "CHECK IT OUT!" (з'являється після оновлення балансу) -->
+        <div id="finalCtaOverlay" class="hidden fixed inset-0 z-50 bg-slate-900/45 backdrop-blur-md flex flex-col items-center justify-center p-6 text-center">
+            <div class="animate-pop-in flex flex-col items-center">
+                <h2 class="font-display text-5xl sm:text-7xl font-black text-white text-outline leading-none tracking-tight mb-6">
+                    CHECK<br>IT OUT!
+                </h2>
+                <button id="playAgainBtn" class="btn-winter-start px-8 py-4 rounded-2xl font-display font-black text-lg sm:text-xl uppercase tracking-wider text-white cursor-pointer shadow-2xl">
+                    SPIN AGAIN ❄️
+                </button>
+            </div>
+        </div>
+    </section>
+
+    <!-- Нижні святкові декорації (подарунки зліва, барабан і ялинкові кульки справа, дисклеймер по центру) -->
+    <footer id="bottomDecorations" class="w-full relative z-30 pointer-events-none pt-4 pb-3 px-2 sm:px-6 flex items-end justify-between">
+        
+        <!-- Подарункові коробки зліва -->
+        <div class="w-24 sm:w-36 shrink-0 -mb-2 -ml-2">
+            <svg viewBox="0 0 160 120" class="w-full h-auto drop-shadow-[0_6px_12px_rgba(0,0,0,0.6)]">
+                <!-- Синій подарунок позаду -->
+                <rect x="65" y="25" width="65" height="65" rx="6" fill="#1d4ed8"/>
+                <rect x="92" y="25" width="12" height="65" fill="#fbbf24"/>
+                <rect x="65" y="52" width="65" height="12" fill="#fbbf24"/>
+                <path d="M98,25 C85,5 70,18 98,25 C125,18 110,5 98,25" fill="none" stroke="#fbbf24" stroke-width="5"/>
+                
+                <!-- Фіолетовий подарунок спереду -->
+                <rect x="10" y="42" width="76" height="72" rx="8" fill="#7e22ce"/>
+                <rect x="42" y="42" width="14" height="72" fill="#f59e0b"/>
+                <rect x="10" y="70" width="76" height="14" fill="#f59e0b"/>
+                <path d="M49,42 C32,18 14,34 49,42 C84,34 66,18 49,42" fill="none" stroke="#fbbf24" stroke-width="6"/>
+            </svg>
+        </div>
+
+        <!-- Дисклеймер по центру -->
+        <div class="text-center px-2 pb-1">
+            <p class="font-display font-extrabold text-[10px] sm:text-xs tracking-wider text-white/85 uppercase drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)]">
+                FOR ILLUSTRATION PURPOSES ONLY
+            </p>
+        </div>
+
+        <!-- Іграшковий барабан та кульки справа -->
+        <div class="w-24 sm:w-36 shrink-0 -mb-2 -mr-2">
+            <svg viewBox="0 0 160 120" class="w-full h-auto drop-shadow-[0_6px_12px_rgba(0,0,0,0.6)]">
+                <!-- Червона глянцева кулька позаду -->
+                <circle cx="118" cy="48" r="26" fill="#dc2626"/>
+                <circle cx="110" cy="40" r="7" fill="#fca5a5" opacity="0.7"/>
+                <rect x="112" y="18" width="12" height="6" rx="2" fill="#fbbf24"/>
+
+                <!-- Святковий барабан спереду -->
+                <ellipse cx="72" cy="96" rx="44" ry="14" fill="#991b1b"/>
+                <rect x="28" y="54" width="88" height="42" fill="#dc2626"/>
+                <ellipse cx="72" cy="54" rx="44" ry="14" fill="#fef3c7" stroke="#f59e0b" stroke-width="4"/>
+                <!-- Зигзагоподібна мотузка на барабані -->
+                <polyline points="32,62 50,94 72,64 94,94 112,62" fill="none" stroke="#fbbf24" stroke-width="4" stroke-linejoin="round"/>
+                <!-- Барабанні палички -->
+                <line x1="35" y1="32" x2="92" y2="58" stroke="#fde68a" stroke-width="4.5" stroke-linecap="round"/>
+                <circle cx="92" cy="58" r="4" fill="#f59e0b"/>
+                <line x1="108" y1="30" x2="54" y2="58" stroke="#fde68a" stroke-width="4.5" stroke-linecap="round"/>
+                <circle cx="54" cy="58" r="4" fill="#f59e0b"/>
+            </svg>
+        </div>
+    </footer>
+
+    <script>
+        /**
+         * =========================================================================
+         * 1. ГЕНЕРАТОР АНІМОВАНОГО СНІГОПАДУ НА CANVAS
+         * =========================================================================
+         */
+        const snowCanvas = document.getElementById('snowCanvas');
+        const snowCtx = snowCanvas.getContext('2d');
+        let snowflakes = [];
+
+        function resizeSnowCanvas() {
+            snowCanvas.width = window.innerWidth;
+            snowCanvas.height = window.innerHeight;
+        }
+
+        function initSnowflakes() {
+            const count = Math.min(85, Math.floor(window.innerWidth / 12));
+            snowflakes = [];
+            for (let i = 0; i < count; i++) {
+                snowflakes.push({
+                    x: Math.random() * snowCanvas.width,
+                    y: Math.random() * snowCanvas.height,
+                    radius: Math.random() * 2.8 + 1.2,
+                    speedY: Math.random() * 1.4 + 0.5,
+                    speedX: (Math.random() - 0.5) * 0.6,
+                    opacity: Math.random() * 0.65 + 0.25
+                });
+            }
+        }
+
+        function animateSnow() {
+            snowCtx.clearRect(0, 0, snowCanvas.width, snowCanvas.height);
+            for (let flake of snowflakes) {
+                snowCtx.beginPath();
+                snowCtx.arc(flake.x, flake.y, flake.radius, 0, Math.PI * 2);
+                snowCtx.fillStyle = `rgba(255, 255, 255, ${flake.opacity})`;
+                snowCtx.fill();
+
+                flake.y += flake.speedY;
+                flake.x += flake.speedX;
+
+                if (flake.y > snowCanvas.height) {
+                    flake.y = -5;
+                    flake.x = Math.random() * snowCanvas.width;
+                }
+                if (flake.x > snowCanvas.width) flake.x = 0;
+                if (flake.x < 0) flake.x = snowCanvas.width;
+            }
+            requestAnimationFrame(animateSnow);
+        }
+
+        window.addEventListener('resize', () => {
+            resizeSnowCanvas();
+            initSnowflakes();
+            centerTrackOnIndex(currentCenterIndex, false);
+        });
+
+        resizeSnowCanvas();
+        initSnowflakes();
+        animateSnow();
+
+        /**
+         * =========================================================================
+         * 2. ЗВУКОВІ ЕФЕКТИ ЧЕРЕЗ TONE.JS (БЕЗ ЗОВНІШНІХ АУДІОФАЙЛІВ)
+         * =========================================================================
+         */
+        let isMuted = false;
+        let tickSynth = null;
+        let winSynth = null;
+
+        async function initAudio() {
+            try {
+                if (Tone.context.state !== 'running') {
+                    await Tone.start();
+                }
+                if (!tickSynth) {
+                    tickSynth = new Tone.MembraneSynth({
+                        pitchDecay: 0.015,
+                        octaves: 3,
+                        envelope: { attack: 0.001, decay: 0.07, sustain: 0 }
+                    }).toDestination();
+                    tickSynth.volume.value = -10;
+                }
+                if (!winSynth) {
+                    winSynth = new Tone.PolySynth(Tone.Synth, {
+                        oscillator: { type: 'triangle' },
+                        envelope: { attack: 0.02, decay: 0.3, sustain: 0.2, release: 0.8 }
+                    }).toDestination();
+                    winSynth.volume.value = -6;
+                }
+            } catch (err) {
+                console.warn('Audio initialization skipped:', err);
+            }
+        }
+
+        function playTickSound() {
+            if (isMuted || !tickSynth) return;
+            try {
+                tickSynth.triggerAttackRelease('C5', '32n');
+            } catch (e) {}
+        }
+
+        function playWinFanfare() {
+            if (isMuted || !winSynth) return;
+            try {
+                const now = Tone.now();
+                winSynth.triggerAttackRelease(['C4', 'E4', 'G4'], '8n', now);
+                winSynth.triggerAttackRelease(['E4', 'G4', 'C5'], '8n', now + 0.14);
+                winSynth.triggerAttackRelease(['G4', 'C5', 'E5', 'G5'], '2n', now + 0.28);
+            } catch (e) {}
+        }
+
+        const soundToggleBtn = document.getElementById('soundToggleBtn');
+        const soundOnIcon = document.getElementById('soundOnIcon');
+        const soundOffIcon = document.getElementById('soundOffIcon');
+
+        soundToggleBtn.addEventListener('click', () => {
+            isMuted = !isMuted;
+            soundOnIcon.classList.toggle('hidden', isMuted);
+            soundOffIcon.classList.toggle('hidden', !isMuted);
+        });
+
+        /**
+         * =========================================================================
+         * 3. ДАНІ НАГОРОД ТА ПОБУДОВА СТРІЧКИ РУЛЕТКИ
+         * =========================================================================
+         */
+        const PRIZE_POOL = [
+            { id: '1k', label: '1k', amount: 1000, type: 'coin' },
+            { id: '2k', label: '2k', amount: 2000, type: 'coin' },
+            { id: '4k', label: '4k', amount: 4000, type: 'coin' },
+            { id: '5k_card', label: '5k', amount: 5000, type: 'giftcard' },
+            { id: '10k', label: '10k', amount: 10000, type: 'coin' },
+            { id: '10k_card', label: '10k', amount: 10000, type: 'giftcard' },
+            { id: '15k', label: '15k', amount: 15000, type: 'coin' }
+        ];
+
+        const TOTAL_CARDS = 65;
+        let generatedItems = [];
+        let currentCenterIndex = 4; // Початково по центру стоїть 1k, як на першому кадрі відео
+        let isSpinning = false;
+        let lastWonAmount = 10000;
+
+        const reelTrack = document.getElementById('reelTrack');
+        const reelViewport = document.getElementById('reelViewport');
+        const spinBtn = document.getElementById('spinBtn');
+        const spinBtnText = document.getElementById('spinBtnText');
+
+        const ROBUX_COIN_IMG = 'https://i.postimg.cc/mg0Nckst/Znimok-ekrana-2026-11-24-o-20-51-49.png';
+        const ROBLOX_CARD_IMG = 'https://i.postimg.cc/Hkf4Jngj/Znimok-ekrana-2026-11-24-o-20-51-45.png';
+
+        // Зображення золотої монети для картки з резервним SVG
+        function getCoinSvg() {
+            return `
+                <img src="${ROBUX_COIN_IMG}" alt="Robux" class="w-16 h-16 sm:w-20 sm:h-20 object-contain drop-shadow-[0_6px_10px_rgba(0,0,0,0.45)] pointer-events-none" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+                <svg style="display:none;" viewBox="0 0 120 120" class="w-16 h-16 sm:w-20 sm:h-20 drop-shadow-[0_6px_10px_rgba(0,0,0,0.4)]">
+                    <defs>
+                        <linearGradient id="cardCoinGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" stop-color="#fff59d"/>
+                            <stop offset="40%" stop-color="#ffd54f"/>
+                            <stop offset="80%" stop-color="#ffb300"/>
+                            <stop offset="100%" stop-color="#e65100"/>
+                        </linearGradient>
+                    </defs>
+                    <polygon points="38,8 82,8 112,38 112,82 82,112 38,112 8,82 8,38" fill="url(#cardCoinGrad)" stroke="#fff9c4" stroke-width="2.5"/>
+                    <polygon points="43,18 77,18 102,43 102,77 77,102 43,102 18,77 18,43" fill="#ffca28" stroke="#b26a00" stroke-width="2"/>
+                    <rect x="38" y="38" width="44" height="44" rx="6" fill="#ffffff" stroke="#b26a00" stroke-width="2"/>
+                    <rect x="51" y="51" width="18" height="18" rx="2" fill="#d99b26"/>
+                </svg>
+            `;
+        }
+
+        // Зображення подарункової картки Roblox для рулетки з резервним шаблоном
+        function getGiftCardSvg() {
+            return `
+                <img src="${ROBLOX_CARD_IMG}" alt="Roblox Gift Card" class="w-16 h-20 sm:w-20 sm:h-24 object-contain rounded-lg drop-shadow-[0_6px_10px_rgba(0,0,0,0.5)] pointer-events-none" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                <div style="display:none;" class="w-16 h-20 sm:w-20 sm:h-24 rounded-lg bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 border border-slate-500/60 shadow-lg flex-col items-center justify-between p-1.5 relative overflow-hidden">
+                    <div class="grid grid-cols-3 gap-0.5 w-full h-full opacity-55">
+                        <div class="bg-sky-500 rounded-[2px]"></div>
+                        <div class="bg-emerald-500 rounded-[2px]"></div>
+                        <div class="bg-amber-500 rounded-[2px]"></div>
+                        <div class="bg-rose-500 rounded-[2px]"></div>
+                        <div class="bg-purple-500 rounded-[2px]"></div>
+                        <div class="bg-cyan-400 rounded-[2px]"></div>
+                        <div class="bg-orange-500 rounded-[2px]"></div>
+                        <div class="bg-indigo-500 rounded-[2px]"></div>
+                        <div class="bg-lime-500 rounded-[2px]"></div>
+                    </div>
+                    <div class="absolute top-1.5 inset-x-1 bg-black/80 rounded px-1 py-0.5 text-[8px] sm:text-[9px] font-black tracking-wider text-white text-center border border-white/20">
+                        ROBLOX
+                    </div>
+                    <div class="absolute bottom-1 right-1 w-3.5 h-3.5 rounded-full bg-amber-400 border border-white"></div>
+                </div>
+            `;
+        }
+
+        // Створення HTML однієї картки
+        function buildCardElement(item, index) {
+            const card = document.createElement('div');
+            card.dataset.index = index;
+            card.className = 'roulette-card shrink-0 w-28 h-36 sm:w-36 sm:h-44 rounded-2xl relative flex flex-col items-center justify-between py-3 px-2 select-none transition-shadow duration-300';
+
+            const visualHtml = item.type === 'giftcard' ? getGiftCardSvg() : getCoinSvg();
+            const labelHtml = item.type === 'giftcard'
+                ? `<div class="flex items-center gap-1 mt-1">
+                        <img src="${ROBUX_COIN_IMG}" alt="R" class="w-4 h-4 sm:w-5 sm:h-5 object-contain" onerror="this.style.display='none'">
+                        <span class="font-display font-extrabold text-lg sm:text-xl text-white">${item.label}</span>
+                   </div>`
+                : `<div class="font-display font-extrabold text-lg sm:text-xl text-white mt-1">${item.label}</div>`;
+
+            card.innerHTML = `
+                <!-- Декоративні сніжинки по кутах картки -->
+                <span class="absolute top-2 left-2 text-white/40 text-xs">❄</span>
+                <span class="absolute top-6 right-2.5 text-white/30 text-[10px]">❄</span>
+                <span class="absolute bottom-4 left-3 text-white/30 text-[10px]">❄</span>
+
+                <div class="flex-1 flex items-center justify-center">
+                    ${visualHtml}
+                </div>
+                ${labelHtml}
+            `;
+            return card;
+        }
+
+        // Наповнення стрічки картками
+        function populateReel() {
+            reelTrack.innerHTML = '';
+            generatedItems = [];
+
+            for (let i = 0; i < TOTAL_CARDS; i++) {
+                let chosen;
+                // Фіксуємо початкову композицію як у відео: 10k_card, 1k (по центру), 2k
+                if (i === 3) chosen = PRIZE_POOL[5]; // 10k card
+                else if (i === 4) chosen = PRIZE_POOL[0]; // 1k
+                else if (i === 5) chosen = PRIZE_POOL[1]; // 2k
+                else {
+                    chosen = PRIZE_POOL[Math.floor(Math.random() * PRIZE_POOL.length)];
+                }
+                generatedItems.push(chosen);
+                reelTrack.appendChild(buildCardElement(chosen, i));
+            }
+        }
+
+        // Розрахунок позиції X для центрування конкретної картки під покажчиком
+        function getTranslateXForIndex(index) {
+            const cards = reelTrack.children;
+            if (!cards[index]) return 0;
+            const viewportWidth = reelViewport.offsetWidth;
+            const card = cards[index];
+            const cardCenter = card.offsetLeft + card.offsetWidth / 2;
+            return (viewportWidth / 2) - cardCenter;
+        }
+
+        function centerTrackOnIndex(index, smooth = false) {
+            const targetX = getTranslateXForIndex(index);
+            reelTrack.style.transition = smooth ? 'transform 0.4s ease-out' : 'none';
+            reelTrack.style.transform = `translate3d(${targetX}px, 0, 0)`;
+        }
+
+        populateReel();
+        // Невелика затримка для точного вимірювання ширини після рендеру
+        requestAnimationFrame(() => centerTrackOnIndex(currentCenterIndex, false));
+
+        /**
+         * =========================================================================
+         * 4. ЛОГІКА ОБЕРТАННЯ РУЛЕТКИ З ПЛАВНИМ ГАЛЬМУВАННЯМ ТА ТІКАННЯМ
+         * =========================================================================
+         */
+        spinBtn.addEventListener('click', async () => {
+            if (isSpinning) return;
+            await initAudio();
+
+            isSpinning = true;
+            spinBtn.disabled = true;
+            spinBtnText.textContent = 'SPINNING...';
+
+            // Скидаємо підсвітку попереднього переможця
+            Array.from(reelTrack.children).forEach(c => c.classList.remove('winner-highlight'));
+
+            // Вибираємо виграшний індекс далеко попереду (наприклад, 52-й слот)
+            // Ставимо 10,000 Robux як у відео (або випадковий приз при повторних спінах)
+            const targetIndex = 52;
+            const isFirstSpin = (currentCenterIndex === 4);
+            const prizeToWin = isFirstSpin
+                ? PRIZE_POOL[4] // 10k coin
+                : PRIZE_POOL[Math.floor(Math.random() * PRIZE_POOL.length)];
+
+            generatedItems[targetIndex] = prizeToWin;
+            const oldCard = reelTrack.children[targetIndex];
+            const newCard = buildCardElement(prizeToWin, targetIndex);
+            reelTrack.replaceChild(newCard, oldCard);
+
+            const startX = getTranslateXForIndex(currentCenterIndex);
+            // Додаємо легке випадкове зміщення всередині виграшної картки для реалістичності
+            const cardWidth = newCard.offsetWidth;
+            const randomOffset = (Math.random() - 0.5) * (cardWidth * 0.25);
+            const endX = getTranslateXForIndex(targetIndex) + randomOffset;
+
+            const duration = 4600; // 4.6 секунди обертання
+            const startTime = performance.now();
+            let lastPassedCardIndex = currentCenterIndex;
+
+            // Кубічна функція плавного сповільнення (easeOutQuart)
+            function easeOutQuart(t) {
+                return 1 - Math.pow(1 - t, 4);
+            }
+
+            function stepAnimation(now) {
+                const elapsed = now - startTime;
+                const progress = Math.min(elapsed / duration, 1);
+                const eased = easeOutQuart(progress);
+
+                const currentX = startX + (endX - startX) * eased;
+                reelTrack.style.transition = 'none';
+                reelTrack.style.transform = `translate3d(${currentX}px, 0, 0)`;
+
+                // Відстежуємо проходження карток під покажчиком для звукового "тіку"
+                const approxIndex = Math.round(currentCenterIndex + (targetIndex - currentCenterIndex) * eased);
+                if (approxIndex !== lastPassedCardIndex) {
+                    lastPassedCardIndex = approxIndex;
+                    playTickSound();
+                }
+
+                if (progress < 1) {
+                    requestAnimationFrame(stepAnimation);
+                } else {
+                    // Доводимо рівно в центр виграшної картки
+                    currentCenterIndex = targetIndex;
+                    centerTrackOnIndex(targetIndex, true);
+                    newCard.classList.add('winner-highlight');
+
+                    lastWonAmount = prizeToWin.amount;
+                    playWinFanfare();
+
+                    // Через 750 мс показуємо екран перемоги YOU WIN!
+                    setTimeout(() => {
+                        showWinScreen(prizeToWin.amount);
+                        isSpinning = false;
+                        spinBtn.disabled = false;
+                        spinBtnText.textContent = 'START';
+                    }, 750);
+                }
+            }
+
+            requestAnimationFrame(stepAnimation);
+        });
+
+        /**
+         * =========================================================================
+         * 5. ПЕРЕХОДИ МІЖ ЕКРАНАМИ: YOU WIN! -> AVATAR BALANCE -> CHECK IT OUT!
+         * =========================================================================
+         */
+        const winScreen = document.getElementById('winScreen');
+        const rouletteScreen = document.getElementById('rouletteScreen');
+        const winAmountTitle = document.getElementById('winAmountTitle');
+        const claimBtn = document.getElementById('claimBtn');
+        const avatarScreen = document.getElementById('avatarScreen');
+        const balanceCounter = document.getElementById('balanceCounter');
+        const redHighlightRing = document.getElementById('redHighlightRing');
+        const finalCtaOverlay = document.getElementById('finalCtaOverlay');
+        const backToSpinBtn = document.getElementById('backToSpinBtn');
+        const playAgainBtn = document.getElementById('playAgainBtn');
+
+        function showWinScreen(amount) {
+            winAmountTitle.textContent = `${amount.toLocaleString('en-US')} Robux`;
+            winScreen.classList.remove('hidden');
+            rouletteScreen.classList.add('blur-sm', 'brightness-75');
+        }
+
+        // Клік по кнопці CHECK BALANCE на екрані перемоги
+        claimBtn.addEventListener('click', () => {
+            winScreen.classList.add('hidden');
+            rouletteScreen.classList.remove('blur-sm', 'brightness-75');
+            avatarScreen.classList.remove('hidden');
+            redHighlightRing.classList.add('hidden');
+            finalCtaOverlay.classList.add('hidden');
+
+            // Стартовий баланс 223, як у відео
+            const startBal = 223;
+            const targetBal = startBal + lastWonAmount;
+            balanceCounter.textContent = startBal;
+
+            // Через 600 мс плавно накручуємо баланс і обводимо червоним овалом
+            setTimeout(() => {
+                const countDuration = 900;
+                const countStart = performance.now();
+
+                function updateBalance(now) {
+                    const p = Math.min((now - countStart) / countDuration, 1);
+                    const currentVal = Math.floor(startBal + (targetBal - startBal) * p);
+                    balanceCounter.textContent = currentVal;
+
+                    if (p < 1) {
+                        requestAnimationFrame(updateBalance);
+                    } else {
+                        balanceCounter.textContent = targetBal;
+                        redHighlightRing.classList.remove('hidden');
+                        playTickSound();
+
+                        // Через 1.1 секунди показуємо фінальний заклик CHECK IT OUT!
+                        setTimeout(() => {
+                            finalCtaOverlay.classList.remove('hidden');
+                        }, 1100);
+                    }
+                }
+                requestAnimationFrame(updateBalance);
+            }, 600);
+        });
+
+        // Повернення до рулетки для нового обертання
+        function resetToRoulette() {
+            avatarScreen.classList.add('hidden');
+            finalCtaOverlay.classList.add('hidden');
+            winScreen.classList.add('hidden');
+            rouletteScreen.classList.remove('blur-sm', 'brightness-75');
+            currentCenterIndex = 4;
+            populateReel();
+            requestAnimationFrame(() => centerTrackOnIndex(currentCenterIndex, false));
+        }
+
+        backToSpinBtn.addEventListener('click', resetToRoulette);
+        playAgainBtn.addEventListener('click', resetToRoulette);
+    </script>
+</body>
+</html>
